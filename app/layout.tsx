@@ -1,8 +1,13 @@
 ﻿import type { Metadata } from "next";
 import "./globals.css";
+import SiteHeader from "./components/SiteHeader";
+import SiteFooter from "./components/SiteFooter";
 
 export const metadata: Metadata = {
-  title: "お得くらべ｜単価・割引・ポイント・送料をまとめて比較",
+  title: {
+    default: "お得くらべ｜単価・割引・ポイント・送料をまとめて比較",
+    template: "%s｜お得くらべ",
+  },
   description:
     "価格、容量、割引、クーポン、ポイント、送料をまとめて計算し、本当にお得な商品を実質単価で比較できる買い物支援ツールです。",
 };
@@ -14,7 +19,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body>{children}</body>
+      <body>
+        <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+          <SiteHeader />
+          <div className="flex-1">{children}</div>
+          <SiteFooter />
+        </div>
+      </body>
     </html>
   );
 }
