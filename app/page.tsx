@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import ComparisonGuides from "./components/ComparisonGuides";
 
 const units = [
   { value: "g", label: "g", factor: 1, compareKey: "weight", basis: 100, basisLabel: "100g" },
@@ -761,6 +762,8 @@ export default function Home() {
             </p>
           </div>
         </section>
+
+        <ComparisonGuides />
 
         <p className="mx-auto mt-8 max-w-3xl text-center text-xs leading-6 text-slate-500">
           ※ ポイント・割引の付与条件や端数処理は店舗ごとに異なるため、
