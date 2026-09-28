@@ -9,8 +9,55 @@ export const units = [
   { value: "枚", label: "枚", factor: 1, compareKey: "sheet", basis: 1, basisLabel: "1枚" },
 ] as const;
 
+export const taxRates = {
+  reduced: 8,
+  standard: 10,
+} as const;
+
+export const taxCategories = [
+  {
+    value: "food",
+    label: "飲食料品",
+    detail: "持ち帰り・宅配など",
+    taxClass: "reduced",
+  },
+  {
+    value: "dining",
+    label: "外食",
+    detail: "店内飲食など",
+    taxClass: "standard",
+  },
+  {
+    value: "alcohol",
+    label: "酒類",
+    detail: "",
+    taxClass: "standard",
+  },
+  {
+    value: "daily",
+    label: "日用品",
+    detail: "",
+    taxClass: "standard",
+  },
+  {
+    value: "medicine",
+    label: "医薬品・医薬部外品",
+    detail: "",
+    taxClass: "standard",
+  },
+  {
+    value: "unknown",
+    label: "わからない",
+    detail: "",
+    taxClass: null,
+  },
+] as const;
+
 export type Unit = (typeof units)[number]["value"];
 export type NumericInput = number | "";
+export type PriceTaxMode = "included" | "excluded";
+export type TaxRate = 8 | 10;
+export type TaxCategory = (typeof taxCategories)[number]["value"];
 
 export type Product = {
   id: number;
@@ -22,6 +69,11 @@ export type Product = {
   coupon: NumericInput;
   pointRate: NumericInput;
   shipping: NumericInput;
+
+  priceTaxMode?: PriceTaxMode;
+  taxRate?: TaxRate;
+  taxCategory?: TaxCategory;
+  taxExclusivePrice?: NumericInput;
 };
 
 export function getUnitMeta(unit: Unit) {
@@ -32,10 +84,48 @@ export function parseNumericInput(value: string): NumericInput {
   return value === "" ? "" : Number(value);
 }
 
+export function getTaxRateForCategory(
+  category: TaxCategory,
+): TaxRate | null {
+  const item = taxCategories.find(
+    (taxCategory) => taxCategory.value === category,
+  );
+
+  if (!item || item.taxClass === null) {
+    return null;
+  }
+
+  return taxRates[item.taxClass];
+}
+
+export function toTaxIncludedPrice(
+  taxExclusivePrice: number,
+  taxRate: TaxRate,
+) {
+  const price = Math.max(0, taxExclusivePrice);
+
+  // 税込換算は比較用の目安。1円未満を切り捨てる。
+  return Math.floor((price * (100 + taxRate)) / 100);
+}
+
 export function calculate(product: Product) {
   const meta = getUnitMeta(product.unit);
 
-  const price = Math.max(0, Number(product.price) || 0);
+  const priceTaxMode = product.priceTaxMode ?? "included";
+  const taxRate = product.taxRate ?? 10;
+  const taxCategory = product.taxCategory ?? "unknown";
+
+  const directPrice = Math.max(0, Number(product.price) || 0);
+  const taxExclusivePrice = Math.max(
+    0,
+    Number(product.taxExclusivePrice) || 0,
+  );
+
+  const price =
+    priceTaxMode === "excluded"
+      ? toTaxIncludedPrice(taxExclusivePrice, taxRate)
+      : directPrice;
+
   const amount = Math.max(0, Number(product.amount) || 0);
   const discountRate = Math.min(
     100,
@@ -65,6 +155,10 @@ export function calculate(product: Product) {
     coupon,
     pointRate,
     shipping,
+    priceTaxMode,
+    taxRate,
+    taxCategory,
+    taxExclusivePrice,
     compareKey: meta.compareKey,
     basis: meta.basis,
     basisLabel: meta.basisLabel,

@@ -1,8 +1,22 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import ComparisonGuides from "./components/ComparisonGuides";
-import { calculate, compareProducts, getUnitMeta, parseNumericInput, units, type Product, type Unit } from "./lib/calculator";
+
+import {
+  calculate,
+  compareProducts,
+  getTaxRateForCategory,
+  getUnitMeta,
+  parseNumericInput,
+  taxCategories,
+  toTaxIncludedPrice,
+  units,
+  type Product,
+  type TaxRate,
+  type Unit,
+} from "./lib/calculator";
 
 type SavedBottomPrice = {
   id: string;
@@ -70,6 +84,7 @@ export default function Home() {
   const [savedPrices, setSavedPrices] = useState<SavedBottomPrice[]>([]);
   const [storageReady, setStorageReady] = useState(false);
   const [notice, setNotice] = useState("");
+  const [advancedOpen, setAdvancedOpen] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -240,7 +255,7 @@ export default function Home() {
   return (
     <main>
 
-      <section className="mx-auto max-w-6xl px-4 py-7 sm:px-6 sm:py-10">
+      <section className="mx-auto max-w-6xl px-4 pb-7 pt-2 sm:px-6 sm:pb-10 sm:pt-4">
         <div className="mx-auto max-w-4xl text-center">
           <p className="mb-2 text-sm font-bold text-emerald-700 sm:mb-3">
             買う前に、10秒で比較
@@ -250,7 +265,7 @@ export default function Home() {
             結局、どっちがお得？
           </h1>
 
-          <p className="mx-auto mt-3 max-w-4xl text-base leading-6 text-slate-600 sm:mt-4 sm:leading-7">
+          <p className="mx-auto mt-2 max-w-4xl text-sm leading-5 text-slate-600 sm:mt-3 sm:text-base sm:leading-6">
             容量・割引・クーポン・ポイント・送料まで含めて、
             実質価格と実質単価をまとめて比較します。
           </p>
@@ -262,10 +277,42 @@ export default function Home() {
           </div>
         )}
 
-        <div className={gridClass}>
+        <div className="mx-auto mt-2 flex max-w-4xl justify-center">
+          <Link
+            href="/how-to"
+            className="rounded-full border border-emerald-200 bg-white px-4 py-1.5 text-xs font-bold text-emerald-700 shadow-sm transition hover:bg-emerald-50"
+          >
+            使い方はこちら
+          </Link>
+        </div>
+
+        <div className={gridClass} style={{ marginTop: "8px" }}>
           {products.map((product, index) => {
             const result = results.find((item) => item.id === product.id)!;
             const saved = getSavedPrice(product.name, result.compareKey);
+
+            const hasAdvancedSettings =
+              Number(product.discountRate) > 0 ||
+              Number(product.coupon) > 0 ||
+              Number(product.pointRate) > 0 ||
+              Number(product.shipping) > 0;
+
+            const advancedSummary = [
+              Number(product.discountRate) > 0
+                ? `${Number(product.discountRate)}%OFF`
+                : "",
+              Number(product.coupon) > 0
+                ? `クーポン${formatYen(Number(product.coupon))}`
+                : "",
+              Number(product.pointRate) > 0
+                ? `ポイント${Number(product.pointRate)}%`
+                : "",
+              Number(product.shipping) > 0
+                ? `送料${formatYen(Number(product.shipping))}`
+                : "",
+            ]
+              .filter(Boolean)
+              .join("・");
 
             let bottomPriceMessage = "";
 
@@ -324,39 +371,143 @@ export default function Home() {
                     onChange={(event) =>
                       updateProduct(product.id, { name: event.target.value })
                     }
-                    className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 sm:mt-1.5 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                   />
                 </label>
 
-                <div className="mt-3 grid grid-cols-2 gap-3 sm:mt-4">
+                <div className="mt-1.5 grid grid-cols-2 gap-3 sm:mt-3">
                   <label className="block">
-                    <span className="text-sm font-bold">価格</span>
-                    <div className="relative mt-2">
+                    <span className="flex items-center justify-between gap-1">
+                      <span className="text-sm font-bold">価格</span>
+
+                      <select
+                        aria-label="税込または税抜"
+                        value={product.priceTaxMode ?? "included"}
+                        onChange={(event) => {
+                          const mode = event.target.value as
+                            | "included"
+                            | "excluded";
+
+                          if (mode === "included") {
+                            updateProduct(product.id, {
+                              priceTaxMode: "included",
+                              price: result.price,
+                              taxExclusivePrice: "",
+                              taxCategory: "unknown",
+                            });
+                            return;
+                          }
+
+                          const original = product.price;
+                          const rate = product.taxRate ?? 10;
+
+                          updateProduct(product.id, {
+                            priceTaxMode: "excluded",
+                            taxCategory: "unknown",
+                            taxRate: rate,
+                            taxExclusivePrice: original,
+                            price:
+                              original === ""
+                                ? ""
+                                : toTaxIncludedPrice(
+                                    Number(original),
+                                    rate,
+                                  ),
+                          });
+                        }}
+                        className="max-w-[62px] rounded-md border border-slate-300 bg-white px-1 py-0.5 text-[10px] font-bold text-slate-600 outline-none"
+                      >
+                        <option value="included">税込</option>
+                        <option value="excluded">税抜</option>
+                      </select>
+                    </span>
+
+                    <div className="relative mt-1 sm:mt-1.5">
                       <input
                         type="number"
                         min="0"
                         value={product.price}
                         onFocus={() => {
-                          if (product.price === 0) {
+                          if (
+                            (product.priceTaxMode ?? "included") ===
+                            "excluded"
+                          ) {
+                            updateProduct(product.id, {
+                              price: product.taxExclusivePrice ?? "",
+                            });
+                          } else if (product.price === 0) {
                             updateProduct(product.id, { price: "" });
                           }
                         }}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          const value = parseNumericInput(
+                            event.target.value,
+                          );
+
+                          if (
+                            (product.priceTaxMode ?? "included") ===
+                            "excluded"
+                          ) {
+                            updateProduct(product.id, {
+                              price: value,
+                              taxExclusivePrice: value,
+                            });
+                          } else {
+                            updateProduct(product.id, { price: value });
+                          }
+                        }}
+                        onBlur={(event) => {
+                          if (
+                            (product.priceTaxMode ?? "included") !==
+                            "excluded"
+                          ) {
+                            return;
+                          }
+
+                          const original = parseNumericInput(
+                            event.currentTarget.value,
+                          );
+                          const rate = product.taxRate ?? 10;
+
                           updateProduct(product.id, {
-                            price: parseNumericInput(event.target.value),
-                          })
-                        }
+                            taxExclusivePrice: original,
+                            price:
+                              original === ""
+                                ? ""
+                                : toTaxIncludedPrice(
+                                    Number(original),
+                                    rate,
+                                  ),
+                          });
+                        }}
                         className="w-full rounded-xl border border-slate-300 px-3 py-2.5 pr-9 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                       />
+
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
                         円
                       </span>
                     </div>
+
+                    {(product.priceTaxMode ?? "included") ===
+                      "excluded" &&
+                      product.taxExclusivePrice !== "" &&
+                      Number(product.taxExclusivePrice) > 0 && (
+                        <p className="mt-1 text-[10px] leading-4 text-slate-500">
+                          税抜{" "}
+                          {formatYen(
+                            Number(product.taxExclusivePrice),
+                          )}
+                          {" → "}税込 {formatYen(result.price)}
+                        </p>
+                      )}
                   </label>
 
                   <label className="block">
-                    <span className="text-sm font-bold">容量・個数</span>
-                    <div className="mt-2 flex">
+                    <span className="text-sm font-bold">
+                      容量・個数
+                    </span>
+
+                    <div className="mt-1 flex sm:mt-1.5">
                       <input
                         type="number"
                         min="0"
@@ -368,10 +519,12 @@ export default function Home() {
                         }}
                         onChange={(event) =>
                           updateProduct(product.id, {
-                            amount: parseNumericInput(event.target.value),
+                            amount: parseNumericInput(
+                              event.target.value,
+                            ),
                           })
                         }
-                        className="min-w-0 flex-1 rounded-l-xl border border-r-0 border-slate-300 px-3 py-2.5 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                        className="min-w-0 flex-1 rounded-l-xl border border-r-0 border-slate-300 px-3 py-2.5 outline-none transition focus:z-10 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                       />
 
                       <select
@@ -381,22 +534,170 @@ export default function Home() {
                             unit: event.target.value as Unit,
                           })
                         }
-                        className="rounded-r-xl border border-slate-300 bg-white px-2 py-2.5 outline-none"
+                        className="w-[66px] rounded-r-xl border border-slate-300 bg-white px-2 outline-none focus:border-emerald-500"
                       >
                         {units.map((unit) => (
-                          <option key={unit.value} value={unit.value}>
+                          <option
+                            key={unit.value}
+                            value={unit.value}
+                          >
                             {unit.label}
                           </option>
                         ))}
                       </select>
                     </div>
                   </label>
+
+                  {(product.priceTaxMode ?? "included") ===
+                    "excluded" && (
+                    <div className="col-span-2 rounded-xl bg-slate-50 p-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-bold text-slate-700">
+                          商品区分を選ぶ
+                        </p>
+                        <span className="text-[10px] font-bold text-emerald-700">
+                          税率 {product.taxRate ?? 10}%
+                        </span>
+                      </div>
+
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {taxCategories.map((category) => {
+                          const selected =
+                            (product.taxCategory ?? "unknown") ===
+                            category.value;
+
+                          return (
+                            <button
+                              key={category.value}
+                              type="button"
+                              onClick={() => {
+                                const automaticRate =
+                                  getTaxRateForCategory(
+                                    category.value,
+                                  );
+
+                                const rate =
+                                  automaticRate ??
+                                  product.taxRate ??
+                                  10;
+
+                                const original = Number(
+                                  product.taxExclusivePrice,
+                                );
+
+                                updateProduct(product.id, {
+                                  taxCategory: category.value,
+                                  taxRate: rate,
+                                  price:
+                                    original > 0
+                                      ? toTaxIncludedPrice(
+                                          original,
+                                          rate,
+                                        )
+                                      : product.price,
+                                });
+                              }}
+                              className={
+                                "rounded-full border px-2.5 py-1 text-[11px] font-bold transition " +
+                                (selected
+                                  ? "border-emerald-600 bg-emerald-600 text-white"
+                                  : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100")
+                              }
+                            >
+                              {category.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {(product.taxCategory ?? "unknown") ===
+                        "unknown" && (
+                        <div className="mt-2 flex items-center gap-2 text-[11px]">
+                          <span className="text-slate-500">
+                            税率を手動で選択
+                          </span>
+
+                          {([8, 10] as TaxRate[]).map(
+                            (rate) => (
+                              <button
+                                key={rate}
+                                type="button"
+                                onClick={() => {
+                                  const original = Number(
+                                    product.taxExclusivePrice,
+                                  );
+
+                                  updateProduct(product.id, {
+                                    taxRate: rate,
+                                    price:
+                                      original > 0
+                                        ? toTaxIncludedPrice(
+                                            original,
+                                            rate,
+                                          )
+                                        : product.price,
+                                  });
+                                }}
+                                className={
+                                  "rounded-md border px-2 py-1 font-bold " +
+                                  ((product.taxRate ?? 10) ===
+                                  rate
+                                    ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                                    : "border-slate-300 bg-white text-slate-600")
+                                }
+                              >
+                                {rate}%
+                              </button>
+                            ),
+                          )}
+                        </div>
+                      )}
+
+                      <p className="mt-2 text-[10px] leading-4 text-slate-500">
+                        税込換算は比較用の目安です。店舗の端数処理により差が出る場合があります。
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="mt-3 grid grid-cols-2 gap-3 sm:mt-4">
+                <button
+                  type="button"
+                  aria-expanded={Boolean(advancedOpen[product.id])}
+                  onClick={() =>
+                    setAdvancedOpen((current) => ({
+                      ...current,
+                      [product.id]: !current[product.id],
+                    }))
+                  }
+                  className="mt-2 flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-bold text-slate-600 outline-none transition hover:bg-slate-100 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                >
+                  <span className="min-w-0">
+                    <span className="block">
+                      {advancedOpen[product.id]
+                        ? "－ 詳細設定を閉じる"
+                        : "＋ 割引・ポイント・送料を設定"}
+                    </span>
+
+                    {hasAdvancedSettings &&
+                      !advancedOpen[product.id] && (
+                        <span className="mt-0.5 block truncate text-[10px] font-medium text-emerald-700">
+                          {advancedSummary}
+                        </span>
+                      )}
+                  </span>
+
+                  {hasAdvancedSettings && (
+                    <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] text-emerald-700">
+                      設定済み
+                    </span>
+                  )}
+                </button>
+
+                {advancedOpen[product.id] && (
+                <div className="mt-2 grid grid-cols-2 gap-3">
                   <label className="block">
                     <span className="text-sm font-bold">割引率</span>
-                    <div className="relative mt-2">
+                    <div className="relative mt-1 sm:mt-1.5">
                       <input
                         type="number"
                         min="0"
@@ -422,7 +723,7 @@ export default function Home() {
 
                   <label className="block">
                     <span className="text-sm font-bold">クーポン</span>
-                    <div className="relative mt-2">
+                    <div className="relative mt-1 sm:mt-1.5">
                       <input
                         type="number"
                         min="0"
@@ -447,7 +748,7 @@ export default function Home() {
 
                   <label className="block">
                     <span className="text-sm font-bold">ポイント還元</span>
-                    <div className="relative mt-2">
+                    <div className="relative mt-1 sm:mt-1.5">
                       <input
                         type="number"
                         min="0"
@@ -472,7 +773,7 @@ export default function Home() {
 
                   <label className="block">
                     <span className="text-sm font-bold">送料</span>
-                    <div className="relative mt-2">
+                    <div className="relative mt-1 sm:mt-1.5">
                       <input
                         type="number"
                         min="0"
@@ -495,8 +796,9 @@ export default function Home() {
                     </div>
                   </label>
                 </div>
+                )}
 
-                <div className="mt-4 rounded-2xl bg-slate-50 p-4 sm:mt-5">
+                <div className="mt-2 rounded-2xl bg-slate-50 p-3 sm:mt-3 sm:p-4">
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-slate-500">実質負担額</span>
                     <strong className="text-lg">
@@ -561,7 +863,7 @@ export default function Home() {
           })}
         </div>
 
-        <div className="mt-5 flex flex-wrap justify-center gap-3">
+        <div className="mt-4 flex flex-wrap justify-center gap-3">
           {products.length < 3 && (
             <button
               type="button"
@@ -584,7 +886,7 @@ export default function Home() {
         <section className="mt-8 overflow-hidden rounded-3xl border border-emerald-200 bg-emerald-50">
           {canCompare && winner ? (
             <div className="p-6 text-center sm:p-8">
-              <p className="text-sm font-bold text-emerald-700">
+              <p className="text-sm font-bold leading-5 text-emerald-700">
                 {hasTie ? "今の条件では同じお得度" : "今の条件で一番お得"}
               </p>
 
@@ -630,7 +932,7 @@ export default function Home() {
         <section className="mt-10 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-bold text-emerald-700">次の買い物にも使える</p>
+              <p className="text-sm font-bold leading-5 text-emerald-700">次の買い物にも使える</p>
               <h2 className="mt-1 text-2xl font-extrabold">保存した底値</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
                 底値はこのブラウザに保存されます。同じ商品名で比較すると、

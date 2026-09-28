@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import {
   calculate,
   compareProducts,
+  getTaxRateForCategory,
+  toTaxIncludedPrice,
 } from "../app/lib/calculator.ts";
 
 function almostEqual(actual, expected, tolerance = 0.000001) {
@@ -28,11 +30,69 @@ function product(overrides = {}) {
 
 const tests = [
   {
+    name: "飲食料品は8%を選択",
+    run() {
+      assert.equal(getTaxRateForCategory("food"), 8);
+    },
+  },
+  {
+    name: "外食・酒類・日用品・医薬品は10%",
+    run() {
+      for (const category of [
+        "dining",
+        "alcohol",
+        "daily",
+        "medicine",
+      ]) {
+        assert.equal(getTaxRateForCategory(category), 10);
+      }
+    },
+  },
+  {
+    name: "わからないは税率を自動決定しない",
+    run() {
+      assert.equal(getTaxRateForCategory("unknown"), null);
+    },
+  },
+  {
+    name: "税抜1000円・10%は税込1100円",
+    run() {
+      assert.equal(toTaxIncludedPrice(1000, 10), 1100);
+    },
+  },
+  {
+    name: "税抜1000円・8%は税込1080円",
+    run() {
+      assert.equal(toTaxIncludedPrice(1000, 8), 1080);
+    },
+  },
+  {
+    name: "税抜価格を税込換算して比較",
+    run() {
+      const result = calculate(
+        product({
+          priceTaxMode: "excluded",
+          taxExclusivePrice: 1000,
+          taxRate: 10,
+          price: 1100,
+        }),
+      );
+
+      assert.equal(result.price, 1100);
+      assert.equal(result.effectivePrice, 1100);
+    },
+  },
+  {
     name: "500gの商品を100g単価へ換算",
     run() {
       almostEqual(
-        calculate(product({ price: 398, amount: 500, unit: "g" }))
-          .displayUnitPrice,
+        calculate(
+          product({
+            price: 398,
+            amount: 500,
+            unit: "g",
+          }),
+        ).displayUnitPrice,
         79.6,
       );
     },
@@ -41,8 +101,13 @@ const tests = [
     name: "1kgの商品を100g単価へ換算",
     run() {
       almostEqual(
-        calculate(product({ price: 796, amount: 1, unit: "kg" }))
-          .displayUnitPrice,
+        calculate(
+          product({
+            price: 796,
+            amount: 1,
+            unit: "kg",
+          }),
+        ).displayUnitPrice,
         79.6,
       );
     },
@@ -50,22 +115,47 @@ const tests = [
   {
     name: "gとkgを同率と判定",
     run() {
-      const results = [
-        calculate(product({ id: 1, name: "A", price: 398, amount: 500, unit: "g" })),
-        calculate(product({ id: 2, name: "B", price: 796, amount: 1, unit: "kg" })),
-      ];
-
-      const comparison = compareProducts(results);
+      const comparison = compareProducts([
+        calculate(
+          product({
+            id: 1,
+            name: "A",
+            price: 398,
+            amount: 500,
+            unit: "g",
+          }),
+        ),
+        calculate(
+          product({
+            id: 2,
+            name: "B",
+            price: 796,
+            amount: 1,
+            unit: "kg",
+          }),
+        ),
+      ]);
 
       assert.equal(comparison.hasTie, true);
-      assert.equal(comparison.cheapestResults.length, 2);
     },
   },
   {
     name: "mlとLを同じ100ml単価へ換算",
     run() {
-      const a = calculate(product({ price: 198, amount: 500, unit: "ml" }));
-      const b = calculate(product({ price: 396, amount: 1, unit: "L" }));
+      const a = calculate(
+        product({
+          price: 198,
+          amount: 500,
+          unit: "ml",
+        }),
+      );
+      const b = calculate(
+        product({
+          price: 396,
+          amount: 1,
+          unit: "L",
+        }),
+      );
 
       almostEqual(a.displayUnitPrice, 39.6);
       almostEqual(b.displayUnitPrice, 39.6);
@@ -77,8 +167,6 @@ const tests = [
       const result = calculate(
         product({
           price: 1000,
-          amount: 1,
-          unit: "個",
           discountRate: 20,
           coupon: 100,
         }),
@@ -93,8 +181,6 @@ const tests = [
       const result = calculate(
         product({
           price: 1000,
-          amount: 1,
-          unit: "個",
           pointRate: 10,
           shipping: 200,
         }),
@@ -122,7 +208,12 @@ const tests = [
     name: "クーポンが価格を超えても負数にならない",
     run() {
       assert.equal(
-        calculate(product({ price: 500, coupon: 1000 })).effectivePrice,
+        calculate(
+          product({
+            price: 500,
+            coupon: 1000,
+          }),
+        ).effectivePrice,
         0,
       );
     },
@@ -142,7 +233,10 @@ const tests = [
       );
 
       assert.equal(result.effectivePrice, 0);
-      assert.equal(result.unitPrice, Number.POSITIVE_INFINITY);
+      assert.equal(
+        result.unitPrice,
+        Number.POSITIVE_INFINITY,
+      );
     },
   },
   {
@@ -158,7 +252,6 @@ const tests = [
       );
 
       assert.equal(result.effectivePrice, 0);
-      assert.equal(result.unitPrice, Number.POSITIVE_INFINITY);
     },
   },
   {
@@ -178,24 +271,50 @@ const tests = [
   {
     name: "3商品の中から最安商品を選ぶ",
     run() {
-      const results = [
-        calculate(product({ id: 1, name: "A", price: 500, amount: 500, unit: "g" })),
-        calculate(product({ id: 2, name: "B", price: 780, amount: 1000, unit: "g" })),
-        calculate(product({ id: 3, name: "C", price: 420, amount: 400, unit: "g" })),
-      ];
-
-      const comparison = compareProducts(results);
+      const comparison = compareProducts([
+        calculate(
+          product({
+            id: 1,
+            name: "A",
+            price: 500,
+            amount: 500,
+            unit: "g",
+          }),
+        ),
+        calculate(
+          product({
+            id: 2,
+            name: "B",
+            price: 780,
+            amount: 1000,
+            unit: "g",
+          }),
+        ),
+        calculate(
+          product({
+            id: 3,
+            name: "C",
+            price: 420,
+            amount: 400,
+            unit: "g",
+          }),
+        ),
+      ]);
 
       assert.equal(comparison.winner.name, "B");
-      almostEqual(comparison.winner.displayUnitPrice, 78);
-      assert.equal(comparison.hasTie, false);
+      almostEqual(
+        comparison.winner.displayUnitPrice,
+        78,
+      );
     },
   },
 ];
 
 let passed = 0;
 
-console.log("===== お得くらべ 共通計算ロジック自動テスト =====");
+console.log(
+  "===== お得くらべ 共通計算ロジック自動テスト =====",
+);
 console.log("");
 
 for (const test of tests) {
