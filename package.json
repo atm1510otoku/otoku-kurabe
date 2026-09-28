@@ -1,26 +1,29 @@
 {
-  "name": "otoku-kurabe",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --webpack",
-    "build": "next build --webpack",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "next": "16.3.6",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.3.6",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  }
+    "name":  "otoku-kurabe",
+    "version":  "0.1.0",
+    "private":  true,
+    "scripts":  {
+                    "dev":  "next dev --webpack",
+                    "build":  "next build --webpack",
+                    "start":  "next start",
+                    "lint":  "eslint .",
+                    "test:calc":  "node scripts/test-calculations.mjs",
+                    "typecheck":  "tsc --noEmit",
+                    "verify":  "npm run typecheck \u0026\u0026 npm run lint \u0026\u0026 npm run test:calc \u0026\u0026 npm run build"
+                },
+    "dependencies":  {
+                         "next":  "16.3.6",
+                         "react":  "19.2.8",
+                         "react-dom":  "19.2.8"
+                     },
+    "devDependencies":  {
+                            "@tailwindcss/postcss":  "^4",
+                            "@types/node":  "^20",
+                            "@types/react":  "^19",
+                            "@types/react-dom":  "^19",
+                            "eslint":  "^9",
+                            "eslint-config-next":  "16.3.6",
+                            "tailwindcss":  "^4",
+                            "typescript":  "^5"
+                        }
 }

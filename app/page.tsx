@@ -16,16 +16,18 @@ const units = [
 
 type Unit = (typeof units)[number]["value"];
 
+type NumericInput = number | "";
+
 type Product = {
   id: number;
   name: string;
-  price: number;
-  amount: number;
+  price: NumericInput;
+  amount: NumericInput;
   unit: Unit;
-  discountRate: number;
-  coupon: number;
-  pointRate: number;
-  shipping: number;
+  discountRate: NumericInput;
+  coupon: NumericInput;
+  pointRate: NumericInput;
+  shipping: NumericInput;
 };
 
 type SavedBottomPrice = {
@@ -79,15 +81,19 @@ function normalizeName(value: string) {
   return value.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
+function parseNumericInput(value: string): NumericInput {
+  return value === "" ? "" : Number(value);
+}
+
 function calculate(product: Product) {
   const meta = getUnitMeta(product.unit);
 
-  const price = Math.max(0, product.price || 0);
-  const amount = Math.max(0, product.amount || 0);
-  const discountRate = Math.min(100, Math.max(0, product.discountRate || 0));
-  const coupon = Math.max(0, product.coupon || 0);
-  const pointRate = Math.max(0, product.pointRate || 0);
-  const shipping = Math.max(0, product.shipping || 0);
+  const price = Math.max(0, Number(product.price) || 0);
+  const amount = Math.max(0, Number(product.amount) || 0);
+  const discountRate = Math.min(100, Math.max(0, Number(product.discountRate) || 0));
+  const coupon = Math.max(0, Number(product.coupon) || 0);
+  const pointRate = Math.max(0, Number(product.pointRate) || 0);
+  const shipping = Math.max(0, Number(product.shipping) || 0);
 
   const discountedPrice = price * (1 - discountRate / 100);
   const afterCoupon = Math.max(0, discountedPrice - coupon);
@@ -165,7 +171,7 @@ export default function Home() {
 
   const comparableResults = results.filter(
     (item) =>
-      item.price > 0 &&
+      Number(item.price) > 0 &&
       item.normalizedAmount > 0 &&
       Number.isFinite(item.unitPrice),
   );
@@ -180,6 +186,14 @@ export default function Home() {
 
   const winner = sortedResults[0];
   const runnerUp = sortedResults[1];
+
+  const cheapestResults = winner
+    ? sortedResults.filter(
+        (item) => Math.abs(item.unitPrice - winner.unitPrice) < 0.000001,
+      )
+    : [];
+
+  const hasTie = cheapestResults.length > 1;
 
   const updateProduct = (id: number, patch: Partial<Product>) => {
     setProducts((current) =>
@@ -246,7 +260,7 @@ export default function Home() {
     }
 
     if (
-      result.price <= 0 ||
+      Number(result.price) <= 0 ||
       result.normalizedAmount <= 0 ||
       !Number.isFinite(result.displayUnitPrice)
     ) {
@@ -270,7 +284,7 @@ export default function Home() {
       basisLabel: result.basisLabel,
       unitPrice: result.displayUnitPrice,
       effectivePrice: result.effectivePrice,
-      amount: result.amount,
+      amount: Number(result.amount) || 0,
       unit: result.unit,
       savedAt: new Date().toISOString(),
     };
@@ -312,9 +326,9 @@ export default function Home() {
   return (
     <main>
 
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <section className="mx-auto max-w-6xl px-4 py-7 sm:px-6 sm:py-10">
         <div className="mx-auto max-w-4xl text-center">
-          <p className="mb-3 text-sm font-bold text-emerald-700">
+          <p className="mb-2 text-sm font-bold text-emerald-700 sm:mb-3">
             買う前に、10秒で比較
           </p>
 
@@ -322,7 +336,7 @@ export default function Home() {
             結局、どっちがお得？
           </h1>
 
-          <p className="mx-auto mt-4 max-w-4xl text-base leading-7 text-slate-600">
+          <p className="mx-auto mt-3 max-w-4xl text-base leading-6 text-slate-600 sm:mt-4 sm:leading-7">
             容量・割引・クーポン・ポイント・送料まで含めて、
             実質価格と実質単価をまとめて比較します。
           </p>
@@ -371,9 +385,9 @@ export default function Home() {
             return (
               <section
                 key={product.id}
-                className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
+                className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
               >
-                <div className="mb-5 flex items-center justify-between gap-3">
+                <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5">
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
                     比較 {index + 1}
                   </span>
@@ -400,7 +414,7 @@ export default function Home() {
                   />
                 </label>
 
-                <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:mt-4">
                   <label className="block">
                     <span className="text-sm font-bold">価格</span>
                     <div className="relative mt-2">
@@ -408,9 +422,14 @@ export default function Home() {
                         type="number"
                         min="0"
                         value={product.price}
+                        onFocus={() => {
+                          if (product.price === 0) {
+                            updateProduct(product.id, { price: "" });
+                          }
+                        }}
                         onChange={(event) =>
                           updateProduct(product.id, {
-                            price: Number(event.target.value),
+                            price: parseNumericInput(event.target.value),
                           })
                         }
                         className="w-full rounded-xl border border-slate-300 px-3 py-2.5 pr-9 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
@@ -428,9 +447,14 @@ export default function Home() {
                         type="number"
                         min="0"
                         value={product.amount}
+                        onFocus={() => {
+                          if (product.amount === 0) {
+                            updateProduct(product.id, { amount: "" });
+                          }
+                        }}
                         onChange={(event) =>
                           updateProduct(product.id, {
-                            amount: Number(event.target.value),
+                            amount: parseNumericInput(event.target.value),
                           })
                         }
                         className="min-w-0 flex-1 rounded-l-xl border border-r-0 border-slate-300 px-3 py-2.5 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
@@ -455,7 +479,7 @@ export default function Home() {
                   </label>
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:mt-4">
                   <label className="block">
                     <span className="text-sm font-bold">割引率</span>
                     <div className="relative mt-2">
@@ -464,9 +488,14 @@ export default function Home() {
                         min="0"
                         max="100"
                         value={product.discountRate}
+                        onFocus={() => {
+                          if (product.discountRate === 0) {
+                            updateProduct(product.id, { discountRate: "" });
+                          }
+                        }}
                         onChange={(event) =>
                           updateProduct(product.id, {
-                            discountRate: Number(event.target.value),
+                            discountRate: parseNumericInput(event.target.value),
                           })
                         }
                         className="w-full rounded-xl border border-slate-300 px-3 py-2.5 pr-8 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
@@ -484,9 +513,14 @@ export default function Home() {
                         type="number"
                         min="0"
                         value={product.coupon}
+                        onFocus={() => {
+                          if (product.coupon === 0) {
+                            updateProduct(product.id, { coupon: "" });
+                          }
+                        }}
                         onChange={(event) =>
                           updateProduct(product.id, {
-                            coupon: Number(event.target.value),
+                            coupon: parseNumericInput(event.target.value),
                           })
                         }
                         className="w-full rounded-xl border border-slate-300 px-3 py-2.5 pr-9 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
@@ -504,9 +538,14 @@ export default function Home() {
                         type="number"
                         min="0"
                         value={product.pointRate}
+                        onFocus={() => {
+                          if (product.pointRate === 0) {
+                            updateProduct(product.id, { pointRate: "" });
+                          }
+                        }}
                         onChange={(event) =>
                           updateProduct(product.id, {
-                            pointRate: Number(event.target.value),
+                            pointRate: parseNumericInput(event.target.value),
                           })
                         }
                         className="w-full rounded-xl border border-slate-300 px-3 py-2.5 pr-8 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
@@ -524,9 +563,14 @@ export default function Home() {
                         type="number"
                         min="0"
                         value={product.shipping}
+                        onFocus={() => {
+                          if (product.shipping === 0) {
+                            updateProduct(product.id, { shipping: "" });
+                          }
+                        }}
                         onChange={(event) =>
                           updateProduct(product.id, {
-                            shipping: Number(event.target.value),
+                            shipping: parseNumericInput(event.target.value),
                           })
                         }
                         className="w-full rounded-xl border border-slate-300 px-3 py-2.5 pr-9 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
@@ -538,7 +582,7 @@ export default function Home() {
                   </label>
                 </div>
 
-                <div className="mt-5 rounded-2xl bg-slate-50 p-4">
+                <div className="mt-4 rounded-2xl bg-slate-50 p-4 sm:mt-5">
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-slate-500">実質負担額</span>
                     <strong className="text-lg">
@@ -594,7 +638,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => saveBottomPrice(result)}
-                  className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
+                  className="mt-3 w-full rounded-xl bg-emerald-600 sm:mt-4 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
                 >
                   {saved ? "この価格で底値を更新" : "この商品の底値を保存"}
                 </button>
@@ -627,11 +671,15 @@ export default function Home() {
           {canCompare && winner ? (
             <div className="p-6 text-center sm:p-8">
               <p className="text-sm font-bold text-emerald-700">
-                今の条件で一番お得
+                {hasTie ? "今の条件では同じお得度" : "今の条件で一番お得"}
               </p>
 
               <h2 className="mt-2 text-3xl font-extrabold">
-                {winner.name || "商品"}
+                {hasTie
+                  ? cheapestResults
+                      .map((item) => item.name || "商品")
+                      .join("・")
+                  : winner.name || "商品"}
               </h2>
 
               <p className="mt-3 text-lg">
@@ -641,7 +689,7 @@ export default function Home() {
                 </strong>
               </p>
 
-              {runnerUp && (
+              {runnerUp && !hasTie && (
                 <p className="mt-2 text-sm text-slate-600">
                   2番目より {winner.basisLabel}あたり{" "}
                   <strong>
