@@ -14,6 +14,9 @@ export default function SiteFooter() {
           <Link href="/points" className="hover:text-emerald-700">
             ポイント還元
           </Link>
+          <Link href="/tax" className="hover:text-emerald-700">
+            税込・税抜計算
+          </Link>
           <Link href="/bottom-price" className="hover:text-emerald-700">
             底値比較
           </Link>

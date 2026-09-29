@@ -24,7 +24,7 @@ export default function UnitPriceCalculator() {
 
   const formattedUnitPrice = Number.isFinite(result.displayUnitPrice)
     ? result.displayUnitPrice.toLocaleString("ja-JP", {
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })
     : "—";
