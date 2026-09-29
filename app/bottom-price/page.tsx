@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: "底値比較｜いつもの商品が本当に安いか確認",
   description:
     "商品の底値を保存し、次の買い物で現在価格と比較できます。特売やセールが本当に安いか判断する買い物支援ツールです。",
+  alternates: {
+    canonical: "/bottom-price",
+  },
 };
 
 export default function BottomPricePage() {

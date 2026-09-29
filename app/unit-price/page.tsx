@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: "単価比較｜100g・1個あたりの値段を簡単比較",
   description:
     "商品の価格と容量から100g・100ml・1個あたりなどの単価を比較できます。容量が違う商品でも本当に安い方を確認できます。",
+  alternates: {
+    canonical: "/unit-price",
+  },
 };
 
 export default function UnitPricePage() {

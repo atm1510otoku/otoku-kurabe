@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: "割引計算｜○％OFF後の価格と単価を比較",
   description:
     "10％OFF、20％OFFなどの割引後価格を計算し、容量や個数まで含めた実質単価で商品を比較できます。",
+  alternates: {
+    canonical: "/discount",
+  },
 };
 
 export default function DiscountPage() {

@@ -3,6 +3,9 @@
 export const metadata: Metadata = {
   title: "プライバシーポリシー",
   description: "お得くらべのプライバシーポリシーです。",
+  alternates: {
+    canonical: "/privacy",
+  },
 };
 
 export default function PrivacyPage() {

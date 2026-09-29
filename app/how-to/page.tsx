@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: "使い方",
   description:
     "お得くらべの使い方を、価格・容量・税込税抜・割引・ポイント・送料・底値保存まで簡単に説明します。",
+  alternates: {
+    canonical: "/how-to",
+  },
 };
 
 export default function HowToPage() {

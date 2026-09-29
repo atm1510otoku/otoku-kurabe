@@ -4,6 +4,9 @@ export const metadata: Metadata = {
   title: "お得くらべについて",
   description:
     "お得くらべの目的と、買い物の価格比較で提供している機能について説明します。",
+  alternates: {
+    canonical: "/about",
+  },
 };
 
 export default function AboutPage() {

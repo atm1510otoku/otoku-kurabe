@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: "ポイント還元比較｜ポイント込みの実質価格を計算",
   description:
     "ポイント還元率を含めた実質負担額を計算し、価格・容量・送料まで含めてどの商品がお得か比較できます。",
+  alternates: {
+    canonical: "/points",
+  },
 };
 
 export default function PointsPage() {

@@ -3,6 +3,9 @@
 export const metadata: Metadata = {
   title: "免責事項",
   description: "お得くらべの計算結果や掲載情報に関する免責事項です。",
+  alternates: {
+    canonical: "/disclaimer",
+  },
 };
 
 export default function DisclaimerPage() {
