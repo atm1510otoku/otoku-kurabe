@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "プライバシーポリシー",
@@ -29,13 +29,45 @@ export default function PrivacyPage() {
         </p>
 
         <h2 className="text-lg font-bold text-slate-900">
-          アクセス解析・広告について
+          Google Analyticsについて
         </h2>
 
         <p>
-          今後、利用状況の把握やサービス改善、広告配信のために、
-          アクセス解析サービスや広告サービスを利用する場合があります。
-          導入した場合は、本ページに必要な情報を追記します。
+          当サイトでは、利用状況の把握とサービス改善のため、
+          Google LLCが提供するGoogle Analyticsを利用しています。
+          Google AnalyticsではCookie等を利用し、閲覧したページ、利用日時、
+          参照元、端末やブラウザなどの利用環境に関する情報が収集される場合があります。
+        </p>
+
+        <p>
+          Googleによる情報の取り扱いについては、
+          Googleのプライバシーポリシーをご確認ください。
+        </p>
+
+        <p>
+          <a
+            href="https://policies.google.com/privacy?hl=ja"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-emerald-700 underline underline-offset-2"
+          >
+            Google プライバシーポリシー
+          </a>
+        </p>
+
+        <p>
+          Google Analyticsによる計測を望まない場合は、
+          ブラウザのCookie設定などを利用してCookieを無効にすることができます。
+        </p>
+
+        <h2 className="text-lg font-bold text-slate-900">
+          広告について
+        </h2>
+
+        <p>
+          現時点では広告配信サービスを導入していません。
+          今後、広告サービス等を導入した場合は、
+          本ページに必要な情報を追記します。
         </p>
 
         <h2 className="text-lg font-bold text-slate-900">
