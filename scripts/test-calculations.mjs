@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   calculate,
+  calculateDiscount,
   compareProducts,
   getTaxRateForCategory,
   toTaxExcludedPrice,
@@ -172,6 +173,31 @@ const tests = [
 
       almostEqual(a.displayUnitPrice, 39.6);
       almostEqual(b.displayUnitPrice, 39.6);
+    },
+  },
+  {
+    name: "割引計算 1000円・20%OFF",
+    run() {
+      const result = calculateDiscount(1000, 20);
+      assert.equal(result.discountAmount, 200);
+      assert.equal(result.discountedPrice, 800);
+    },
+  },
+  {
+    name: "割引計算は100%を上限にする",
+    run() {
+      const result = calculateDiscount(1000, 150);
+      assert.equal(result.discountRate, 100);
+      assert.equal(result.discountedPrice, 0);
+    },
+  },
+  {
+    name: "割引計算の負数は0として扱う",
+    run() {
+      const result = calculateDiscount(-1000, -20);
+      assert.equal(result.price, 0);
+      assert.equal(result.discountRate, 0);
+      assert.equal(result.discountedPrice, 0);
     },
   },
   {

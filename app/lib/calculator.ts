@@ -118,6 +118,23 @@ export function toTaxExcludedPrice(
   return Math.floor((price * 100) / (100 + taxRate));
 }
 
+export function calculateDiscount(
+  price: number,
+  discountRate: number,
+) {
+  const normalizedPrice = Math.max(0, price);
+  const normalizedRate = Math.min(100, Math.max(0, discountRate));
+  const discountAmount = normalizedPrice * (normalizedRate / 100);
+  const discountedPrice = Math.max(0, normalizedPrice - discountAmount);
+
+  return {
+    price: normalizedPrice,
+    discountRate: normalizedRate,
+    discountAmount,
+    discountedPrice,
+  };
+}
+
 export function calculate(product: Product) {
   const meta = getUnitMeta(product.unit);
 
@@ -137,15 +154,16 @@ export function calculate(product: Product) {
       : directPrice;
 
   const amount = Math.max(0, Number(product.amount) || 0);
-  const discountRate = Math.min(
-    100,
-    Math.max(0, Number(product.discountRate) || 0),
+  const discount = calculateDiscount(
+    price,
+    Number(product.discountRate) || 0,
   );
+  const discountRate = discount.discountRate;
   const coupon = Math.max(0, Number(product.coupon) || 0);
   const pointRate = Math.max(0, Number(product.pointRate) || 0);
   const shipping = Math.max(0, Number(product.shipping) || 0);
 
-  const discountedPrice = price * (1 - discountRate / 100);
+  const discountedPrice = discount.discountedPrice;
   const afterCoupon = Math.max(0, discountedPrice - coupon);
   const earnedPoints = Math.floor(afterCoupon * (pointRate / 100));
   const payment = afterCoupon + shipping;
