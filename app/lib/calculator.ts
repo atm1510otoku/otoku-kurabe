@@ -135,6 +135,28 @@ export function calculateDiscount(
   };
 }
 
+export function calculatePoints(
+  price: number,
+  pointRate: number,
+) {
+  const normalizedPrice = Math.max(0, price);
+  const normalizedRate = Math.max(0, pointRate);
+  const earnedPoints = Math.floor(
+    normalizedPrice * (normalizedRate / 100),
+  );
+  const effectivePrice = Math.max(
+    0,
+    normalizedPrice - earnedPoints,
+  );
+
+  return {
+    price: normalizedPrice,
+    pointRate: normalizedRate,
+    earnedPoints,
+    effectivePrice,
+  };
+}
+
 export function calculate(product: Product) {
   const meta = getUnitMeta(product.unit);
 
@@ -165,7 +187,8 @@ export function calculate(product: Product) {
 
   const discountedPrice = discount.discountedPrice;
   const afterCoupon = Math.max(0, discountedPrice - coupon);
-  const earnedPoints = Math.floor(afterCoupon * (pointRate / 100));
+  const pointResult = calculatePoints(afterCoupon, pointRate);
+  const earnedPoints = pointResult.earnedPoints;
   const payment = afterCoupon + shipping;
   const effectivePrice = Math.max(0, payment - earnedPoints);
 

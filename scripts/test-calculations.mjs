@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   calculate,
   calculateDiscount,
+  calculatePoints,
   compareProducts,
   getTaxRateForCategory,
   toTaxExcludedPrice,
@@ -212,6 +213,32 @@ const tests = [
       );
 
       assert.equal(result.effectivePrice, 700);
+    },
+  },
+  {
+    name: "ポイント計算 1000円・10%還元",
+    run() {
+      const result = calculatePoints(1000, 10);
+      assert.equal(result.earnedPoints, 100);
+      assert.equal(result.effectivePrice, 900);
+    },
+  },
+  {
+    name: "ポイント計算は小数点以下を切り捨て",
+    run() {
+      const result = calculatePoints(999, 10);
+      assert.equal(result.earnedPoints, 99);
+      assert.equal(result.effectivePrice, 900);
+    },
+  },
+  {
+    name: "ポイント計算の負数は0として扱う",
+    run() {
+      const result = calculatePoints(-1000, -10);
+      assert.equal(result.price, 0);
+      assert.equal(result.pointRate, 0);
+      assert.equal(result.earnedPoints, 0);
+      assert.equal(result.effectivePrice, 0);
     },
   },
   {
