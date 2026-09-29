@@ -157,6 +157,33 @@ export function calculatePoints(
   };
 }
 
+export function calculateUnitPrice(
+  price: number,
+  amount: number,
+  unit: Unit,
+) {
+  const meta = getUnitMeta(unit);
+  const normalizedPrice = Math.max(0, price);
+  const normalizedInputAmount = Math.max(0, amount);
+  const normalizedAmount = normalizedInputAmount * meta.factor;
+  const unitPrice =
+    normalizedAmount > 0
+      ? normalizedPrice / normalizedAmount
+      : Number.POSITIVE_INFINITY;
+
+  return {
+    price: normalizedPrice,
+    amount: normalizedInputAmount,
+    unit,
+    compareKey: meta.compareKey,
+    basis: meta.basis,
+    basisLabel: meta.basisLabel,
+    normalizedAmount,
+    unitPrice,
+    displayUnitPrice: unitPrice * meta.basis,
+  };
+}
+
 export function calculate(product: Product) {
   const meta = getUnitMeta(product.unit);
 
@@ -192,11 +219,13 @@ export function calculate(product: Product) {
   const payment = afterCoupon + shipping;
   const effectivePrice = Math.max(0, payment - earnedPoints);
 
-  const normalizedAmount = amount * meta.factor;
-  const unitPrice =
-    normalizedAmount > 0
-      ? effectivePrice / normalizedAmount
-      : Number.POSITIVE_INFINITY;
+  const unitResult = calculateUnitPrice(
+    effectivePrice,
+    amount,
+    product.unit,
+  );
+  const normalizedAmount = unitResult.normalizedAmount;
+  const unitPrice = unitResult.unitPrice;
 
   return {
     ...product,

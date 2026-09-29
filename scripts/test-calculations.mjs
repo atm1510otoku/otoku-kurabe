@@ -3,6 +3,7 @@ import {
   calculate,
   calculateDiscount,
   calculatePoints,
+  calculateUnitPrice,
   compareProducts,
   getTaxRateForCategory,
   toTaxExcludedPrice,
@@ -95,6 +96,32 @@ const tests = [
 
       assert.equal(result.price, 1100);
       assert.equal(result.effectivePrice, 1100);
+    },
+  },
+  {
+    name: "単価計算 398円・500g",
+    run() {
+      const result = calculateUnitPrice(398, 500, "g");
+      almostEqual(result.displayUnitPrice, 79.6);
+      assert.equal(result.basisLabel, "100g");
+    },
+  },
+  {
+    name: "単価計算 796円・1kg",
+    run() {
+      const result = calculateUnitPrice(796, 1, "kg");
+      almostEqual(result.displayUnitPrice, 79.6);
+      assert.equal(result.basisLabel, "100g");
+    },
+  },
+  {
+    name: "単価計算は容量0なら比較不能",
+    run() {
+      const result = calculateUnitPrice(1000, 0, "g");
+      assert.equal(
+        result.unitPrice,
+        Number.POSITIVE_INFINITY,
+      );
     },
   },
   {
