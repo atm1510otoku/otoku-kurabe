@@ -18,19 +18,10 @@ import {
   type Unit,
 } from "./lib/calculator";
 
-type SavedBottomPrice = {
-  id: string;
-  name: string;
-  compareKey: string;
-  basisLabel: string;
-  unitPrice: number;
-  effectivePrice: number;
-  amount: number;
-  unit: Unit;
-  savedAt: string;
-};
-
-const STORAGE_KEY = "otoku-kurabe-bottom-prices-v1";
+import {
+  BOTTOM_PRICE_STORAGE_KEY,
+  type SavedBottomPrice,
+} from "./lib/bottom-price";
 
 const initialProducts: Product[] = [
   {
@@ -89,7 +80,7 @@ export default function Home() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
-        const stored = localStorage.getItem(STORAGE_KEY);
+        const stored = localStorage.getItem(BOTTOM_PRICE_STORAGE_KEY);
 
         if (stored) {
           const parsed = JSON.parse(stored);
@@ -111,7 +102,7 @@ export default function Home() {
   useEffect(() => {
     if (!storageReady) return;
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedPrices));
+    localStorage.setItem(BOTTOM_PRICE_STORAGE_KEY, JSON.stringify(savedPrices));
   }, [savedPrices, storageReady]);
 
   const results = useMemo(() => products.map(calculate), [products]);

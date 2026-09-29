@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
+import BottomPriceManager from "./BottomPriceManager";
 
 export const metadata: Metadata = {
   title: "底値比較｜いつもの商品が本当に安いか確認",
@@ -19,7 +20,11 @@ export default function BottomPricePage() {
         「これ、前より安い？」を底値で確認
       </h1>
 
-      <div className="mt-6 space-y-6 text-sm leading-7 text-slate-700">
+      <div className="mt-6">
+        <BottomPriceManager />
+      </div>
+
+      <div className="mt-8 space-y-6 text-sm leading-7 text-slate-700">
         <p>
           セールになっていても、以前もっと安く買えた商品かもしれません。
           よく買う商品の底値を記録しておくと、買い時を判断しやすくなります。
