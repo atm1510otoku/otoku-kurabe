@@ -12,7 +12,7 @@ export default function ComparisonGuides() {
         </h2>
       </div>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Link
           href="/unit-price"
           className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-emerald-300"
@@ -40,6 +40,16 @@ export default function ComparisonGuides() {
           <p className="font-bold">ポイント還元</p>
           <p className="mt-2 text-sm leading-6 text-slate-600">
             ポイント込みの実質価格を比べる
+          </p>
+        </Link>
+
+        <Link
+          href="/tax"
+          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-emerald-300"
+        >
+          <p className="font-bold">税込・税抜計算</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            消費税8%・10%の価格をすぐ計算する
           </p>
         </Link>
 

@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/how-to",
     "/unit-price",
     "/discount",
+    "/tax",
     "/points",
     "/bottom-price",
     "/about",
@@ -24,12 +25,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency:
       route === "" ? "weekly" : route.startsWith("/unit-") ||
         route === "/discount" ||
+        route === "/tax" ||
         route === "/points" ||
         route === "/bottom-price"
         ? "monthly"
         : "yearly",
     priority: route === "" ? 1 : route.startsWith("/unit-") ||
       route === "/discount" ||
+      route === "/tax" ||
       route === "/points" ||
       route === "/bottom-price"
       ? 0.8

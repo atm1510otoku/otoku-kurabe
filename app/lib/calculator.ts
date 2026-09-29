@@ -108,6 +108,16 @@ export function toTaxIncludedPrice(
   return Math.floor((price * (100 + taxRate)) / 100);
 }
 
+export function toTaxExcludedPrice(
+  taxIncludedPrice: number,
+  taxRate: TaxRate,
+) {
+  const price = Math.max(0, taxIncludedPrice);
+
+  // 税抜換算は比較用の目安。1円未満を切り捨てる。
+  return Math.floor((price * 100) / (100 + taxRate));
+}
+
 export function calculate(product: Product) {
   const meta = getUnitMeta(product.unit);
 

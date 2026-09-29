@@ -3,6 +3,7 @@ import {
   calculate,
   compareProducts,
   getTaxRateForCategory,
+  toTaxExcludedPrice,
   toTaxIncludedPrice,
 } from "../app/lib/calculator.ts";
 
@@ -64,6 +65,18 @@ const tests = [
     name: "税抜1000円・8%は税込1080円",
     run() {
       assert.equal(toTaxIncludedPrice(1000, 8), 1080);
+    },
+  },
+  {
+    name: "税込1100円・10%は税抜1000円",
+    run() {
+      assert.equal(toTaxExcludedPrice(1100, 10), 1000);
+    },
+  },
+  {
+    name: "税込1080円・8%は税抜1000円",
+    run() {
+      assert.equal(toTaxExcludedPrice(1080, 8), 1000);
     },
   },
   {
