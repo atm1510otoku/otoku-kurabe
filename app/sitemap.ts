@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { guideSlugs } from "./guides/data";
 import { getSiteUrl } from "./lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -13,6 +14,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/tax",
     "/points",
     "/bottom-price",
+    "/guides",
+    ...guideSlugs.map((slug) => `/guides/${slug}`),
     "/about",
     "/privacy",
     "/disclaimer",
@@ -23,19 +26,28 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${baseUrl}${route}`,
     lastModified,
     changeFrequency:
-      route === "" ? "weekly" : route.startsWith("/unit-") ||
-        route === "/discount" ||
-        route === "/tax" ||
-        route === "/points" ||
-        route === "/bottom-price"
-        ? "monthly"
-        : "yearly",
-    priority: route === "" ? 1 : route.startsWith("/unit-") ||
-      route === "/discount" ||
-      route === "/tax" ||
-      route === "/points" ||
-      route === "/bottom-price"
-      ? 0.8
-      : 0.4,
+      route === ""
+        ? "weekly"
+        : route === "/guides" ||
+            route.startsWith("/guides/") ||
+            route.startsWith("/unit-") ||
+            route === "/discount" ||
+            route === "/tax" ||
+            route === "/points" ||
+            route === "/bottom-price"
+          ? "monthly"
+          : "yearly",
+    priority:
+      route === ""
+        ? 1
+        : route === "/guides" ||
+            route.startsWith("/guides/") ||
+            route.startsWith("/unit-") ||
+            route === "/discount" ||
+            route === "/tax" ||
+            route === "/points" ||
+            route === "/bottom-price"
+          ? 0.8
+          : 0.4,
   }));
 }

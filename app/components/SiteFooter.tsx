@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
 export default function SiteFooter() {
   return (
@@ -19,6 +19,9 @@ export default function SiteFooter() {
           </Link>
           <Link href="/bottom-price" className="hover:text-emerald-700">
             底値比較
+          </Link>
+          <Link href="/guides" className="hover:text-emerald-700">
+            買い物ガイド
           </Link>
         </nav>
 
