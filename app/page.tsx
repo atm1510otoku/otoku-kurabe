@@ -76,6 +76,8 @@ export default function Home() {
   const [storageReady, setStorageReady] = useState(false);
   const [notice, setNotice] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState<Record<number, boolean>>({});
+  const [savedProductQuery, setSavedProductQuery] = useState<Record<number, string>>({});
+  const [savedProductOpen, setSavedProductOpen] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -122,6 +124,46 @@ export default function Home() {
       ),
     );
     setNotice("");
+  };
+
+  const getFilteredSavedProducts = (productId: number) => {
+    const query = normalizeName(savedProductQuery[productId] ?? "");
+
+    const sorted = [...savedPrices].sort((a, b) =>
+      b.savedAt.localeCompare(a.savedAt),
+    );
+
+    if (!query) {
+      return sorted;
+    }
+
+    return sorted.filter((item) =>
+      normalizeName(
+        `${item.name} ${item.amount}${item.unit}`,
+      ).includes(query),
+    );
+  };
+
+  const applySavedProduct = (
+    productId: number,
+    saved: SavedBottomPrice,
+  ) => {
+    updateProduct(productId, {
+      name: saved.name,
+      price: "",
+      taxExclusivePrice: "",
+      priceTaxMode: "included",
+      amount: saved.amount,
+      unit: saved.unit as Unit,
+      discountRate: 0,
+      coupon: 0,
+      pointRate: 0,
+      shipping: 0,
+    });
+
+    setNotice(
+      `${saved.name} を読み込みました。今回の価格を入力してください。`,
+    );
   };
 
   const addProduct = () => {
@@ -354,6 +396,102 @@ export default function Home() {
                     </button>
                   )}
                 </div>
+
+                {storageReady && savedPrices.length > 0 && (
+                  <div className="relative mb-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3">
+                    <p className="text-sm font-bold text-emerald-800">
+                      保存した商品から選ぶ
+                    </p>
+
+                    <div className="relative mt-1.5">
+                      <div className="flex">
+                        <input
+                          type="search"
+                          value={savedProductQuery[product.id] ?? ""}
+                          placeholder="商品名を検索"
+                          aria-label="保存した商品を検索"
+                          onFocus={() =>
+                            setSavedProductOpen((current) => ({
+                              ...current,
+                              [product.id]: true,
+                            }))
+                          }
+                          onChange={(event) => {
+                            setSavedProductQuery((current) => ({
+                              ...current,
+                              [product.id]: event.target.value,
+                            }));
+
+                            setSavedProductOpen((current) => ({
+                              ...current,
+                              [product.id]: true,
+                            }));
+                          }}
+                          className="w-full rounded-l-xl border border-emerald-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                        />
+
+                        <button
+                          type="button"
+                          aria-label="保存商品の候補を開く"
+                          onClick={() =>
+                            setSavedProductOpen((current) => ({
+                              ...current,
+                              [product.id]: !current[product.id],
+                            }))
+                          }
+                          className="rounded-r-xl border border-l-0 border-emerald-200 bg-white px-3 text-slate-600 transition hover:bg-emerald-50"
+                        >
+                          ▼
+                        </button>
+                      </div>
+
+                      {savedProductOpen[product.id] && (
+                        <div className="absolute left-0 right-0 z-30 mt-1 max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
+                          {getFilteredSavedProducts(product.id).length === 0 ? (
+                            <p className="px-4 py-3 text-sm text-slate-500">
+                              該当する保存商品はありません
+                            </p>
+                          ) : (
+                            getFilteredSavedProducts(product.id).map((item) => (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => {
+                                  applySavedProduct(product.id, item);
+
+                                  setSavedProductQuery((current) => ({
+                                    ...current,
+                                    [product.id]: `${item.name}｜${item.amount}${item.unit}`,
+                                  }));
+
+                                  setSavedProductOpen((current) => ({
+                                    ...current,
+                                    [product.id]: false,
+                                  }));
+                                }}
+                                className="block w-full border-b border-slate-100 px-4 py-3 text-left transition last:border-b-0 hover:bg-emerald-50"
+                              >
+                                <span className="block font-bold text-slate-900">
+                                  {item.name}
+                                </span>
+
+                                <span className="mt-0.5 block text-xs text-slate-500">
+                                  {item.amount}
+                                  {item.unit} ・ 底値 {item.unitPrice.toFixed(2)}円/
+                                  {item.basisLabel}
+                                </span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="mt-1.5 text-xs leading-5 text-emerald-800">
+                      選ぶと商品名・容量・単位を自動入力します。
+                    </p>
+                  </div>
+                )}
 
                 <label className="block">
                   <span className="text-sm font-bold">商品名</span>
