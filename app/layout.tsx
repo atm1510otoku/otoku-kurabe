@@ -40,6 +40,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
+      <head>
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3278087341069801"
+          crossOrigin="anonymous"
+        ></script>
+      </head>
       <body>
         <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
           <SiteHeader />
